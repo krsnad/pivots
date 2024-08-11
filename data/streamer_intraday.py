@@ -4,10 +4,8 @@ import numpy as np
 
 
 from tlib.data import SpotData
-from tlib.ta.indicators import Indicator, IndicatorManager, IndicatorData
 from tlib.ta.pivots import PivotManager
 
-from xlabs.quant.levels.intraday_levels import Levels
 
 from line_profiler import profile
 
@@ -17,7 +15,7 @@ class StreamerIntraday:
     def __init__(self, ticker='nifty', start_date='20180101', end_date='20181231',
                 freqs=[5, 10, 15, 30],
                 indicators=[
-                    Indicator('atr', 'd', (10, ), 'atr_fast'),
+                    
                 ]):
         
         self.ticker = ticker
@@ -27,9 +25,7 @@ class StreamerIntraday:
         self.freqs = [1]  + list(freqs) + ['d']
         
         self.indicators = indicators
-        self.indicator_manager = IndicatorManager(self.indicators)
         self.pivot_manager = PivotManager(self.freqs)
-        self.levels = Levels(self)
         
 
         self.dates = self.spot_data.dates
@@ -63,9 +59,7 @@ class StreamerIntraday:
             self.tick = tick
             self.tm = tm
             self._process_timeframes(dt, tm)
-            self.indicator_manager.calculate_indicators(self)
             self.pivot_manager.process_pivots(self)
-            self.levels.mark_levels()
             if dt >= self.start_date:
                 yield self.tick_1
                     
