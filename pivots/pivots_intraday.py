@@ -339,3 +339,16 @@ class IntradayPivots(PivotsBase):
     @staticmethod
     def get_tick_body_pct(tick):
         return abs_pct_chg(tick.close, tick.open)
+    
+    
+class PivotManager:
+    def __init__(self, freqs):
+        self.pivots = {freq: IntradayPivots(freq) for freq in freqs if freq in [5, 15, 30]}
+
+    def process_pivots(self, streamer):
+        for freq in self.pivots:
+            tick = getattr(streamer, f'tick_{freq}')
+            if not tick:
+                continue
+            
+            self.pivots[freq].on_tick(tick)
