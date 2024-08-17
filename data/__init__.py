@@ -9,9 +9,9 @@ import pyarrow as pa
 import pyarrow.dataset as ds
 
 
-from tlib.resampler.resampler import resample
-from tlib.data.constants import SPOT_DATA_PATH
-from tlib.lib import get_int_dt, get_dttime_form_intdt
+from pivots.resampler.resampler import resample
+from pivots.data.constants import SPOT_DATA_PATH
+from pivots.lib import get_int_dt, get_dttime_form_intdt
 
 
 

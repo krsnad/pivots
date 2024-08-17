@@ -10,8 +10,8 @@ from datetime import timedelta
 from pyarrow import Table
 from pathlib import Path
 
-from tlib.data.constants import SPOT_DATA_PATH
-from tlib.lib import get_int_dt, get_int_tm
+from pivots.data.constants import SPOT_DATA_PATH
+from pivots.lib import get_int_dt, get_int_tm
 
 
 

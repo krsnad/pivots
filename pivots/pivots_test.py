@@ -1,4 +1,4 @@
-from tlib.data.streamer_intraday import StreamerIntraday
+from pivots.data.streamer_intraday import StreamerIntraday
 
 
 

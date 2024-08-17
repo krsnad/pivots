@@ -74,7 +74,8 @@ class PivotsBase:
         self.local_map = dict()
         self.global_map = dict()
         
-
+        self.ticks = list()
+        
         self.latest_local_pivot_type    = None
         self.latest_global_pivot_type   = None
         self.current_tick               = None
@@ -86,34 +87,31 @@ class PivotsBase:
 
 
     def on_tick(self, tick):
+        
+        self.ticks.append(tick)
         self.current_tick = tick
 
         if tick.dt == 20170328 and self.interval == 5:
             
             debug = True
+            
 
         if self.maxima_tick is None: 
             # or tick.high > self.maxima_tick.high:
             self.maxima_tick = tick
             
         else:
-            if tick.oc_h == tick.close:
-                if tick.high > self.maxima_tick.high:
-                    if tick.close > self.maxima_tick.close:
-                        self.maxima_tick = tick
-                    elif self.maxima_tick.close - tick.close < 3:
-                        self.maxima_tick = tick
+            if tick.high > self.maxima_tick.high:
+                self.maxima_tick = tick
+
 
         if self.minima_tick is None:
             # or tick.low < self.minima_tick.low:
             self.minima_tick = tick
         else:
-            if tick.oc_l == tick.close:
-                if tick.low < self.minima_tick.low:
-                    if tick.close < self.minima_tick.close:
-                        self.minima_tick = tick
-                    if tick.close - self.minima_tick.close < 3:
-                        self.minima_tick = tick
+            if tick.low < self.minima_tick.low:
+                self.minima_tick = tick
+
 
 
         self.on_tick_custom(tick)

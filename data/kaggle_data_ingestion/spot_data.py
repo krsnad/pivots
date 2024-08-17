@@ -1,6 +1,6 @@
 from pathlib import Path
 from pyarrow import Table
-from tlib.data.constants import SPOT_DATA_PATH
+from pivots.data.constants import SPOT_DATA_PATH
 import pyarrow.feather as feather
 import pandas as pd
 import csv

@@ -1,5 +1,5 @@
-from tlib.pivots import PivotsBase, PivotType, LocalPivot, GlobalPivot, get_dttime_form_intdt
-from tlib.lib import abs_pct_chg
+from pivots.pivots import PivotsBase, PivotType, LocalPivot, GlobalPivot, get_dttime_form_intdt
+from pivots.lib import abs_pct_chg
 
 
 class IntradayPivots(PivotsBase):
@@ -29,15 +29,6 @@ class IntradayPivots(PivotsBase):
 
         self.debug = True if self.is_debug_duration(tick) else False
 
-
-        # Check for new trading day or uninitialized pivot
-        # if self._is_new_day():
-            # self._reset_for_new_day(tick)
-        
-        # if self.latest_local_pivot_type is None:
-            # pivot_marked = self._mark_first_intraday_pivot(tick)
-        # else:
-            # pivot_marked = self._mark_subsequent_intraday_pivots(tick)
            
         pivot_marked = self._mark_subsequent_intraday_pivots(tick)
            
@@ -58,13 +49,7 @@ class IntradayPivots(PivotsBase):
         return not self.previous_tick or self.previous_tick.dt != self.current_tick.dt
 
 
-    def _reset_for_new_day(self, tick):
-        """Reset the state for a new trading day."""
-        self.latest_local_pivot_type = None
-        self.past_bars = []
-        self.maxima_tick = tick
-        self.minima_tick = tick
-        self.past_tick = None
+
 
 
     def _mark_subsequent_intraday_pivots(self, tick):
@@ -83,18 +68,11 @@ class IntradayPivots(PivotsBase):
         
     
     def is_lower_close(self, close, past_tick):
-
-        if past_tick.close - close < 1.5:
-            return False
-        
-        return self.get_tick_body_pct(past_tick) > 0.03 or  close < past_tick.open
+        return close.close < past_tick.close and close.low < past_tick.low
 
 
     def is_higher_close(self, close, past_tick):
-        if close - past_tick.close < 1.5:
-            return False
-        
-        return self.get_tick_body_pct(past_tick) > 0.03 or close > past_tick.open
+        return close.close > past_tick.close and close.high > past_tick.high
 
 
     def mark_local_minima(self, tick):
@@ -108,15 +86,15 @@ class IntradayPivots(PivotsBase):
             past_tick = self.past_bars[past_tick_i]
             prev_tick = self.past_bars[past_tick_i - 1] if past_tick_i > 0 else None
 
-            if self.is_higher_close(close, past_tick):
+            if self.is_higher_close(tick, past_tick):
 
                 if self.is_traditional_pivot_complete(past_tick, tick, PivotType.low):
                     self.mark_pivot(tick, PivotType.low)
                     return True
 
-                elif self.is_intraday_pivot_complete(prev_tick, past_tick, tick, PivotType.low):
-                    self.mark_pivot(tick, PivotType.low)
-                    return True
+                # elif self.is_intraday_pivot_complete(prev_tick, past_tick, tick, PivotType.low):
+                #     self.mark_pivot(tick, PivotType.low)
+                #     return True
 
                 self.probable_minima[past_tick.tm] = self.probable_minima.get(past_tick.tm, []) + [tick]
             
@@ -129,6 +107,9 @@ class IntradayPivots(PivotsBase):
 
         close = tick.close
         prev_tick = None
+        
+        if tick.tm > 1514:
+            debug=True
 
         past_tick_i = len(self.past_bars) -1
         while past_tick_i >= 0:
@@ -136,15 +117,15 @@ class IntradayPivots(PivotsBase):
             past_tick = self.past_bars[past_tick_i]
             prev_tick = self.past_bars[past_tick_i - 1] if past_tick_i > 0 else self.past_tick
 
-            if self.is_lower_close(close, past_tick):
+            if self.is_lower_close(tick, past_tick):
 
                 if self.is_traditional_pivot_complete(past_tick, tick, PivotType.high):
                     self.mark_pivot(tick, PivotType.high)
                     return True
 
-                elif self.is_intraday_pivot_complete(prev_tick, past_tick, tick, PivotType.high):
-                    self.mark_pivot(tick, PivotType.high)
-                    return True
+                # elif self.is_intraday_pivot_complete(prev_tick, past_tick, tick, PivotType.high):
+                #     self.mark_pivot(tick, PivotType.high)
+                #     return True
 
                 self.probable_maxima[past_tick.tm] = self.probable_maxima.get(past_tick.tm, []) + [tick]
             
@@ -161,12 +142,14 @@ class IntradayPivots(PivotsBase):
 
         if not num_bars + 1 >= self.num_bars:
             return False
+        
+        return True
 
-        # check if tick is atlest half of pivot tick
-        if pivot_type == PivotType.high:
-            return tick.close < (pivot_tick.open + pivot_tick.close) / 2
-        else:
-            return tick.close > (pivot_tick.open + pivot_tick.open) / 2
+        # # check if tick is atlest half of pivot tick
+        # if pivot_type == PivotType.high:
+        #     return tick.close < (pivot_tick.open + pivot_tick.close) / 2
+        # else:
+        #     return tick.close > (pivot_tick.open + pivot_tick.close) / 2
         
 
 
@@ -232,14 +215,20 @@ class IntradayPivots(PivotsBase):
     def mark_pivot(self, formation_tick, pivot_type):
         
         self.latest_local_pivot_type = pivot_type
-
+        
+        if formation_tick.tm > 1519:
+            debug = True
+            
         if pivot_type == PivotType.high:
             pivot = LocalPivot(self.maxima_tick, pivot_type, formation_tick)
 
             self.local_maxima.append(pivot)
             self.remark_local_pivot(PivotType.low)
 
-            self.minima_tick = self.current_tick
+            # resetting minima tick here, should be reset to the min of all the bars starting from maxima_tick
+            
+            self.minima_tick = self.search_min_max_tick(self.maxima_tick, find='min')
+
             self.probable_maxima = dict()
 
         else:
@@ -247,7 +236,8 @@ class IntradayPivots(PivotsBase):
 
             self.local_minima.append(pivot)
             self.remark_local_pivot(PivotType.high)
-            self.maxima_tick = self.current_tick
+            
+            self.maxima_tick = self.search_min_max_tick(self.minima_tick, find='max')
             self.probable_minima = dict()
 
         self.locals.append(pivot)
@@ -256,7 +246,41 @@ class IntradayPivots(PivotsBase):
         
         self.past_tick = self.past_bars[-1]
         self.past_bars = [self.current_tick]
+      
+      
+    def search_min_max_tick(self, pivot_tick, find='min'):
+        min_max_tick = None
         
+        i = -1
+        tick = self.current_tick
+        
+        if find == 'min':
+            while True:
+
+                if min_max_tick is None or tick.low < min_max_tick.low:
+                    min_max_tick = tick
+                    
+                if tick.dttime == pivot_tick.dttime or i == -len(self.ticks):
+                    break
+                
+                tick = self.ticks[i]
+                i -= 1
+                
+                
+        else:
+            while True:
+            
+                if min_max_tick is None or  tick.high > min_max_tick.high:
+                    min_max_tick = tick
+
+                if tick.dttime == pivot_tick.dttime or i == -len(self.ticks):
+                    break
+                tick = self.ticks[i]
+                i -= 1
+                
+                
+        return min_max_tick
+    
         
     def mark_global_pivot(self):
         if self.latest_global_pivot_type is None:
@@ -352,3 +376,67 @@ class PivotManager:
                 continue
             
             self.pivots[freq].on_tick(tick)
+            
+            
+from datetime import datetime 
+import pandas as pd
+
+class Tick:
+    def __init__(self, index, dttime, dt, tm, open_, high, low, close, volume):
+        self.index = index
+        self.dttime = dttime
+        self.dt = dt
+        self.tm = tm
+        self.open = open_
+        self.high = high
+        self.low = low
+        self.close = close
+        self.volume = volume
+
+        if self.open > self.close:
+            self.oc_h = self.open
+            self.oc_l = self.close
+        else:
+            self.oc_h = self.close
+            self.oc_l = self.open
+
+    def __repr__(self):
+        return (f"Tick(index={self.index}, dt={self.dt}, tm={self.tm}, open={self.open}, "
+                f"high={self.high}, low={self.low}, close={self.close}, "
+                f"volume={self.volume}, oc_h={self.oc_h}, oc_l={self.oc_l})")
+        
+        
+def convert_date_to_int(date_str):
+    dt_obj = datetime.strptime(date_str, '%d.%m.%y %H:%M:%S')
+    return int(dt_obj.strftime('%Y%m%d'))
+
+# Load the Excel file
+file_path = '~/Downloads/27Jan2022_NF_24Feb22_marked.xlsx'
+excel_data = pd.read_excel(file_path)
+
+# Populate the list of Tick objects with dt as an integer date format and tm as HHMM
+ticks_with_dt_int = []
+
+for idx, row in excel_data.iterrows():
+    dttime = datetime.strptime(row['Date'], '%d.%m.%y %H:%M:%S')
+    dt_int = convert_date_to_int(row['Date'])
+    tm_int = int(dttime.strftime('%H%M'))  # Convert time to HHMM format (919 for 09:19)
+    
+    tick = Tick(
+        idx, 
+        dttime,
+        dt_int, 
+        tm_int, 
+        row['Open'], 
+        row['High'], 
+        row['Low'], 
+        row['Close'], 
+        row['vol']
+    )
+    
+    ticks_with_dt_int.append(tick)
+
+stock_data = []
+pivots = IntradayPivots(interval=5)
+for tick in ticks_with_dt_int:
+    pivots.on_tick(tick)

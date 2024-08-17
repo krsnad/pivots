@@ -3,8 +3,8 @@ from collections import namedtuple
 import numpy as np
 
 
-from tlib.data import SpotData
-from tlib.ta.pivots import PivotManager
+from pivots.data import SpotData
+from pivots.ta.pivots import PivotManager
 
 
 from line_profiler import profile
