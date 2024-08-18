@@ -260,7 +260,7 @@ class IntradayPivots(PivotsBase):
                 if min_max_tick is None or tick.low < min_max_tick.low:
                     min_max_tick = tick
                     
-                if tick.dttime == pivot_tick.dttime or i == -len(self.ticks):
+                if (tick.dt == pivot_tick.dt and tick.tm == pivot_tick.tm) or i == -len(self.ticks):
                     break
                 
                 tick = self.ticks[i]
@@ -273,7 +273,7 @@ class IntradayPivots(PivotsBase):
                 if min_max_tick is None or  tick.high > min_max_tick.high:
                     min_max_tick = tick
 
-                if tick.dttime == pivot_tick.dttime or i == -len(self.ticks):
+                if (tick.dt == pivot_tick.dt and tick.tm == pivot_tick.tm) or i == -len(self.ticks):
                     break
                 tick = self.ticks[i]
                 i -= 1

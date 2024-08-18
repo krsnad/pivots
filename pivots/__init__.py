@@ -1,5 +1,5 @@
 from enum import Enum
-from tlib.lib import get_dttime_form_intdt
+from pivots.lib import get_dttime_form_intdt
 
 
 class PivotType(Enum):
